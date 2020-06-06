@@ -1,0 +1,51 @@
+- hosts: all
+  become: true
+  vars_files:
+    - creds.yml
+  tasks:
+    - name: update the system
+      apt:
+        name: "*"
+        state: latest
+        
+    - name: restart system to reboot to newest kernel
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+
+    - name: wait for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: wait for the system to reboot
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 120
+
+    - name: Install base system req packages 
+      become: true
+      apt:
+        state: present
+        name:
+         - apt-transport-https 
+         - ca-certificates 
+         - curl 
+         - gnupg-agent 
+         - software-properties-common
+         - python3-pip
+         - gdm3
+         - firefox
+         - gnome-terminal
+         - docker.io
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Enable and start docker
+      service: 
+        name: docker
+        enabled: yes
+        state: started

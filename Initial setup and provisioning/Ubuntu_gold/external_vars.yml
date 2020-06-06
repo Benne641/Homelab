@@ -1,0 +1,5 @@
+vcenter_server: "10.0.0.160"
+vcenter_user: "administrator@londo.bell"
+vcenter_pass: "Gund@m420"
+datacenter_name: "Homelab"
+cluster_name: "10.0.0.58"

@@ -1,0 +1,222 @@
+---
+- hosts: all
+  become: true
+  vars_files:
+    - creds.yml
+
+  tasks:
+    - name: update repo cache
+      dnf:
+        update_cache: yes
+
+    # - name: remove firewalld
+    #   shell:
+    #     systemctl disable firewalld
+
+    # - name: stop firewalld
+    #   shell:
+    #     systemctl stop firewalld
+
+    - name: Install base system req packages 
+      become: true
+      dnf:
+        state: present
+        name:
+         - lvm2
+         - fuse-overlayfs
+         - wget
+         - device-mapper-persistent-data
+         - dnf-utils
+         - yum-utils 
+         - python3-pip 
+         - virtualenv 
+         - python3-setuptools
+         - epel-release 
+         - curl
+
+    - name: Give premissions to downloads
+      file:
+        path: /home/falcon/Downloads
+        state: directory
+        mode: u=rwx,g=rwx,o=rwx
+
+    - name: Give premissions to videos
+      file:
+        path: /home/falcon/Videos
+        state: directory
+        mode: u=rwx,g=rwx,o=rwx
+
+    - name: install nordvpn client package
+      dnf:
+        name: https://repo.nordvpn.com/yum/nordvpn/centos/noarch/Packages/n/nordvpn-release-1.0.0-1.noarch.rpm
+        state: present
+
+    - name: Add Docker GPG apt Key
+      rpm_key:
+        key: https://download.docker.com/linux/centos/gpg
+        state: present
+
+    - name: add docker repo
+      become: true
+      shell:
+        yum-config-manager \
+        --add-repo \
+        https://download.docker.com/linux/centos/docker-ce.repo
+    
+    - name: install containerd.io version 1.2
+      become: true
+      dnf:
+        name: https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.6-3.3.el7.x86_64.rpm
+
+    - name: update repo cache
+      dnf:
+        update_cache: yes
+
+    - name: install nordvpn, docker-ce-cli and docker-ce
+      become: true
+      dnf:
+        state: present
+        name:
+         - docker-ce-cli
+         - docker-ce
+         - nordvpn
+         
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Enable docker
+      service: 
+        name: docker
+        enabled: yes
+
+    - name: Start docker
+      service: 
+        name: docker
+        state: started
+      
+    - name: pull sonarr image
+      docker_image:
+        name: linuxserver/sonarr
+        source: pull
+
+    - name: pull radarr image
+      docker_image:
+        name: linuxserver/radarr
+        source: pull
+
+    - name: pull jackett image
+      docker_image:
+        name: linuxserver/jackett
+        source: pull
+  
+    - name: pull transmission image
+      docker_image:
+        name: linuxserver/transmission
+        source: pull  
+
+    - name: Create docker network
+      docker_network:
+        name: network_one
+
+    - name: jackett Container 
+      docker_container:
+        name: jackett
+        image: linuxserver/jackett
+        state: started
+        published_ports: 9117:9117
+        restart_policy: always
+        purge_networks: yes
+
+    - name: sonarr Container 
+      docker_container:
+        name: sonarr
+        image: linuxserver/sonarr
+        state: started
+        published_ports: 8989:8989
+        purge_networks: yes
+        volumes:
+          - /home/downloads:/home/falcon/Downloads
+          - /home/videos:/home/falcon/Videos
+        restart_policy: always
+        env:
+          PUID: "0"
+          PGID: "0"
+
+    - name: radarr Container 
+      docker_container:
+        name: radarr
+        image: linuxserver/radarr
+        state: started
+        published_ports: 7878:7878
+        purge_networks: yes
+        volumes:
+          - /downloads:/home/falcon/Downloads
+          - /movies:/home/falcon/Videos
+          - /config:/home/falcon/radarr
+        restart_policy: always
+        env:
+          PUID: "1000"
+          PGID: "1000"
+
+    - name: transmsission container
+      docker_container:
+        name: transmission
+        image: linuxserver/transmission
+        state: started
+        published_ports: 
+          - 9091:9091
+          - 51413:51413
+          - 51413:51413/udp
+        purge_networks: yes
+        volumes:
+          - /home/falcon/data:/config
+          - /home/falcon/Downloads:/downloads
+          - /home/falcon/watch:/watch
+        env:
+          PUID: "1000"
+          PGID: "1000"
+          USER: "me"
+          PASS: "me"
+        restart_policy: unless-stopped
+        
+    - name: add jackett to network
+      docker_container:
+        name: jackett
+        networks: 
+          - name: network_one
+            links:
+              - sonarr
+
+    - name: add sonarr to network
+      docker_container:
+        name: sonarr
+        networks: 
+          - name: network_one
+            links:
+              - jackett
+
+    - name: add transmission to network
+      docker_container:
+        name: transmission
+        networks: 
+          - name: network_one
+            links:
+              - jackett
+              - sonarr
+
+    - name: add raadarr to network
+      docker_container:
+        name: radarr
+        networks: 
+          - name: network_one
+            links:
+              - jackett
+    
+    - name: Allow docker traffic
+      firewalld:
+        zone: trusted
+        interface: docker0
+        permanent: yes
+        immediate: yes
+        state: enabled
