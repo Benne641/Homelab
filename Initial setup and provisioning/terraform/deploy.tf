@@ -44,9 +44,9 @@ resource "vsphere_virtual_machine" "vm" {
   #memory   = 4096
   num_cpus = "${var.cpu_num}"
   memory   = "${var.mem_num}"
-  guest_id = "${data.vsphere_virtual_machine.template.guest_id}"
+  guest_id = "${data.vsphere_virtual_machine.template2.guest_id}"
 
-  scsi_type = "${data.vsphere_virtual_machine.template.scsi_type}"
+  scsi_type = "${data.vsphere_virtual_machine.template2.scsi_type}"
   firmware  = "${var.vsphere_vm_firmware}"
 
   network_interface {
@@ -58,12 +58,12 @@ resource "vsphere_virtual_machine" "vm" {
     label            = "disk0"
     #size             = "${data.vsphere_virtual_machine.template.disks.0.size}"
     size             = "${var.dsize}"
-    eagerly_scrub    = "${data.vsphere_virtual_machine.template.disks.0.eagerly_scrub}"
-    thin_provisioned = "${data.vsphere_virtual_machine.template.disks.0.thin_provisioned}"
+    eagerly_scrub    = "${data.vsphere_virtual_machine.template2.disks.0.eagerly_scrub}"
+    thin_provisioned = "${data.vsphere_virtual_machine.template2.disks.0.thin_provisioned}"
   }
 
   clone {
-    template_uuid = "${data.vsphere_virtual_machine.template.id}"
+    template_uuid = "${data.vsphere_virtual_machine.template2.id}"
 
     customize {
       linux_options {
