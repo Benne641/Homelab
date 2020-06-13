@@ -1,10 +1,11 @@
 ---
-- hosts: all
+- hosts: cicd
   become: true
   vars_files:
     - creds.yml
 
   tasks:
+    
     - name: update the system
       dnf:
         name: "*"
@@ -33,9 +34,14 @@
         state: present
         name:
          - lvm2
-         - wget 
+         - fuse-overlayfs
+         - wget
+         - device-mapper-persistent-data
          - dnf-utils
-         - yum-utils              
+         - yum-utils 
+         - python3-pip 
+         - virtualenv 
+         - python3-setuptools
          - epel-release 
          - curl
 
