@@ -1,0 +1,148 @@
+---
+- hosts: plexservers
+  become: true
+  vars_files:
+    - creds.yml
+
+  tasks:
+    # - name: remove firewalld
+    #   shell:
+    #     systemctl disable firewalld
+
+    # - name: stop firewalld
+    #   shell:
+    #     systemctl stop firewalld
+
+    - name: update the system
+      dnf:
+        name: "*"
+        skip_broken: yes
+        state: latest
+        
+    - name: restart system to reboot to newest kernel
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+
+    - name: wait for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: wait for the system to reboot
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 60
+
+    - name: Install base system req packages 
+      become: true
+      dnf:
+        state: present
+        name:
+         - lvm2
+         - fuse-overlayfs
+         - wget
+         - device-mapper-persistent-data
+         - dnf-utils
+         - yum-utils 
+         - python3-pip 
+         - virtualenv 
+         - python3-setuptools
+         - epel-release 
+         - curl
+
+    - name: Add Docker GPG apt Key
+      rpm_key:
+        key: https://download.docker.com/linux/centos/gpg
+        state: present
+
+    - name: add docker repo
+      become: true
+      shell:
+        yum-config-manager \
+        --add-repo \
+        https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: install containerd.io version 1.2
+      become: true
+      dnf:
+        name: https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.6-3.3.el7.x86_64.rpm
+
+    - name: update repo cache
+      dnf:
+        update_cache: yes
+    
+    - name: install docker
+      become: true
+      dnf:
+        state: present
+        name: 
+          - docker-ce-cli
+          - docker-ce
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Enable and start docker
+      service: 
+        name: docker
+        enabled: yes
+        state: started
+
+
+    - name: pull plex image
+      docker_image:
+        name: linuxserver/plex
+        source: pull
+      
+    - name: plex Container 
+      docker_container:
+        name: plex
+        image: linuxserver/plex
+        state: started
+        published_ports: 
+        - 32400:32400
+        - 3005:3005/tcp
+        - 8324:8324/tcp
+        - 32469:32469/tcp
+        - 1900:1900/udp
+        - 32410:32410/udp
+        - 32412:32412/udp
+        - 32413:32413/udp
+        - 32414:32414/udp
+        purge_networks: yes
+        restart_policy: always
+        env:
+          TZ: America/NewYork
+        volumes:
+          - /home/falcon/Videos:/data
+      
+    - name: Create docker network
+      docker_network:
+        name: network_one
+
+    - name: add plex to network
+      docker_container:
+        name: plex
+        networks: 
+          - name: network_one
+                
+    - name: Correct Video premissions and ownership
+      file:
+        path: /home/falcon/Videos
+        state: directory
+        recurse: yes
+        owner: falcon
+        group: falcon
+        mode: u=rwx,g=rwx,o=rx
+    
+    - name: Allow docker traffic
+      firewalld:
+        zone: trusted
+        interface: docker0
+        permanent: yes
+        immediate: yes
+        state: enabled
+

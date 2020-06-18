@@ -1,0 +1,121 @@
+- hosts: wordpressservers
+  become: true
+  vars_files:
+    - creds.yml
+    - db.yml
+  # vars:
+  #   docker_volume: db_data
+  #   docker_network: wordpress_net
+  #   db_name: db
+  #   wp_name: wordpress
+  #   wp_host_port: "{{ lookup('env','WORDPRESS_PORT') | default(8080)}}"
+  #   wp_container_port: 80
+
+  tasks:
+    - name: update the system
+      apt:
+        name: "*"
+        state: latest
+        
+    - name: restart system to reboot to newest kernel
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+
+    - name: wait for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: wait for the system to reboot
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 120
+
+    - name: Install base system req packages 
+      become: true
+      apt:
+        state: present
+        name:
+         - apt-transport-https 
+         - ca-certificates 
+         - curl 
+         - gnupg-agent 
+         - software-properties-common
+         - python3-pip
+        #  - gdm3
+        #  - firefox
+        #  - gnome-terminal
+         - docker.io
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Enable and start docker
+      service: 
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: pull wordpress image
+      docker_image:
+        name: wordpress:latest
+        source: pull
+
+    - name: pull mysql image
+      docker_image:
+        name: mysql:5.7
+        source: pull
+        
+    - name: "Create a Volume"
+      docker_volume:
+        name: "{{ docker_volume }}"
+
+    - name: "Create a network"
+      docker_network:
+        name: "{{ docker_network }}"
+
+    - name: "Launch database container"
+      docker_container:
+        name: "{{ db_name }}"
+        image: mysql:5.7
+        volumes:
+          - "{{ docker_volume }}:/var/lib/mysql:rw"
+        restart_policy: always
+        network_mode: "{{ docker_network }}"
+        env:
+          MYSQL_ROOT_PASSWORD: "{{ MYSQL_ROOT_PASSWORD }}"
+          MYSQL_DATABASE: "{{ MYSQL_DATABASE }}"
+          MYSQL_USER: "{{ MYSQL_USER }}"
+          MYSQL_PASSWORD: "{{ MYSQL_PASSWORD }}"
+
+    - name: "Launch wordpress container"
+      docker_container:
+        name: "{{ wp_name }}"
+        image: wordpress:latest
+        ports:
+          - "80:80"
+        restart_policy: always
+        network_mode: "{{ docker_network }}"
+        env:
+          WORDPRESS_DB_HOST: "{{ db_name }}:3306"
+          WORDPRESS_DB_PASSWORD: wordpress
+
+    - name: restart system to reboot to newest kernel
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+
+    - name: wait for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: wait for the system to reboot
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 120
+    

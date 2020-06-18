@@ -1,0 +1,64 @@
+---
+- hosts: webserver
+  become: true
+  vars_files:
+    - creds.yml
+
+  tasks:
+    - name: update the system
+      dnf:
+        name: "*"
+        skip_broken: yes
+        state: latest
+        
+    - name: restart system to reboot to newest kernel
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+
+    - name: wait for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: wait for the system to reboot
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 60
+
+    - name: Install base system req packages 
+      become: true
+      dnf:
+        state: present
+        name:
+         - dnf-utils   
+         - epel-release 
+         - curl
+         - wget
+         - nginx
+    
+    - name: Enable and start nginx
+      service: 
+        name: nginx
+        enabled: yes
+        state: started
+    
+    - name: Allow https traffic
+      firewalld:
+        zone: public
+        service: https
+        permanent: yes
+        immediate: yes
+        state: enabled
+    
+    - name: Allow http traffic
+      firewalld:
+        zone: public
+        service: http
+        permanent: yes
+        immediate: yes
+        state: enabled
+
+    
+    

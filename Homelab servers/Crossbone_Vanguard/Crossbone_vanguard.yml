@@ -47,18 +47,61 @@
          - python3-pip
          - docker.io
          - nordvpn
-        
+        #  - firewalld
+        #  - iptables
+
     - name: Install Docker Module for Python
       pip:
         name: 
          - docker
          - docker-compose
 
+    # - name: Disable and stop ufw
+    #   service: 
+    #     name: ufw
+    #     enabled: no
+    #     state: stopped
+
     - name: Enable and start docker
       service: 
         name: docker
         enabled: yes
         state: started
+    
+    - name: Create a new primary partition with a size of 2TB
+      parted:
+        device: /dev/sda
+        number: 3
+        state: present
+        part_start: 50GB
+        part_end: 2TB
+    
+    - name: Create a ext4 filesystem on /dev/sda3
+      filesystem:
+        fstype: ext4
+        dev: /dev/sda3
+    
+    - name: Mount sda3 fs 
+      mount:
+        path: /Drive
+        src: /dev/sda3
+        fstype: ext4
+        state: present
+    
+    - name: Recursively change owner and premissions of storage
+      file:
+        path: /Drive
+        state: directory
+        recurse: yes
+        owner: falcon
+        group: falcon
+        mode: u+rwx,g+rwx,o+rwx
+    
+    - name: Create symbolic link 
+      file:
+        src: /Drive
+        dest: /home/falcon/media
+        state: link
 
     - name: run the mediaservers docker-compose.yml
       docker_compose:
@@ -67,26 +110,45 @@
           version: "3"
           services:
             transmission:
-              image: linuxserver/transmission
-              container_name: transmission
+              image: haugene/transmission-openvpn
+              container_name: transmission-openvpn
               restart: always
               privileged: true
               ports:
                 - "9091:9091"
-                - "51413:51413"
-                - "51413:51413/udp"
               networks:
                 - plexnet
               environment:
-                - PUID=1000
-                - PGID=1000
-                - USER=me
-                - PASS=me
+                - CREATE_TUN_DEVICE=true
+                - OPENVPN_PROVIDER=NORDVPN
+                - NORDVPN_COUNTRY=nl
+                #- OPENVPN_CONFIG=nl601.nordvpn.com
+                - OPENVPN_USERNAME=gellgoogjager@gmail.com
+                - OPENVPN_PASSWORD=F@ntasy54
+                - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60 --mssfix 1640
+                - WEBPROXY_ENABLED=false
+                - LOCAL_NETWORK=10.0.0.249/24
+                - TRANSMISSION_RPC_AUTHENTICATION_REQUIRED=true
+                - TRANSMISSION_RPC_PASSWORD=me
+                - TRANSMISSION_RPC_USERNAME=me
+                - TRANSMISSION_UMASK=2
+                - TRANSMISSION_RATIO_LIMIT=1.00
+                - TRANSMISSION_RATIO_LIMIT_ENABLED=false
+              cap_add:
+                - NET_ADMIN
+              logging:
+                driver: json-file
+                options:
+                  max-size: 10m
               volumes:
-                - /home/falcon/data:/config
-                - /home/falcon/Downloads:/downloads
-                - /home/falcon/watch:/watch
-              restart: unless-stopped
+                - /Drive/falcon/downloads:/data
+                - /etc/localtime:/etc/localtime:ro
+                - /Drive/falcon/transmission/config:/config
+                - /Drive/falcon/transmission/watch:/watch
+              dns:
+                - 8.8.8.8
+                - 8.8.4.4
+              restart: unless-stopped     
             radarr:
               image: linuxserver/radarr
               container_name: radarr
@@ -100,9 +162,10 @@
                 - PUID=1000
                 - TZ=America/New_York
               volumes:
-                - /home/falcon/Downloads:/home/downloads
-                - /home/falcon/Videos:/home/movies
-                - /home/falcon/radarr:/home/config
+                - /Drive/falcon/downloads:/home/downloads
+                - /Drive/falcon/videos:/home/movies
+                - /Drive/falcon/radarr:/home/config
+                - /Drive/falcon/transmission/completed:/downloads
               restart: unless-stopped
             sonarr:
               image: linuxserver/sonarr
@@ -117,9 +180,9 @@
                 - PUID=1000
                 - TZ=America/New_York
               volumes:
-                - /home/falcon/Downloads:/home/downloads
-                - /home/falcon/Videos:/home/videos
-                - /home/falcon/sonarr-config:/sonarr/config
+                - /Drive/falcon/downloads:/home/downloads
+                - /Drive/falcon/videos:/home/videos
+                - /Drive/falcon/sonarr-config:/sonarr/config
                 #- ${MOUNT_POINT}/transmission:/data
               restart: unless-stopped
             jackett:
@@ -137,7 +200,7 @@
                 - /home/falcon/jacket-downloads:/downloads
               ports:
                 - "9117:9117"
-              restart: unless-stopped
+              restart: unless-stopped   
             # emby: I switched to plex on seperate compute node
             #   image: emby/embyserver
             #   environment:
@@ -175,5 +238,3 @@
           networks:
             plexnet:
               driver: bridge
-
-    

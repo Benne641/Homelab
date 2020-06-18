@@ -1,0 +1,18 @@
+---
+- hosts: all
+  become: true
+  vars_files:
+    - creds.yml
+    - db.yml
+
+- name:  Run Crossbones playbook
+  import_playbook: Crossbone_Vanguard.yml
+- name:  Run Jenkins playbook
+  import_playbook: jenkins.yml
+- name:  Run Plex playbook
+  import_playbook: PlexServerConfigCentos8.yml
+- name:  Run webserver playbook
+  import_playbook: webserver.yml
+- name:  Run wordpress playbook
+  import_playbook: wordpressUbuntu.yml
+       

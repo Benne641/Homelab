@@ -1,0 +1,45 @@
+---
+- hosts: localhost
+  gather_facts: yes
+  vars_files:
+    - /external_vars.yml
+    
+  tasks:
+  - name: Create a virtual machine from a template
+    vmware_guest:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_pass }}"
+      validate_certs: no
+      datacenter: "{{ datacenter_name }}"
+      folder: /{{ datacenter_name }}/vm
+      name: Plex
+      state: poweredon
+      template: Centos8_G
+      disk:
+      - size_gb: 4000
+        type: thin
+        datastore: VmLocal
+      hardware:
+        memory_mb: 32000
+        num_cpus: 4
+        num_cpu_cores_per_socket: 4
+        scsi: paravirtual
+        memory_reservation_lock: True
+        mem_limit: 8096
+        mem_reservation: 4096
+        cpu_limit: 8096
+        cpu_reservation: 4096
+        max_connections: 5
+        hotadd_cpu: True
+        hotremove_cpu: True
+        hotadd_memory: False
+        boot_firmware: "efi"
+      cdrom:
+        type: iso
+        iso_path: "[VmLocal] /images/CentOS-8.1.1911-x86_64-dvd1.iso"
+      networks:
+      - name: VM Network
+      wait_for_ip_address: yes
+    delegate_to: localhost
+    register: deploy
