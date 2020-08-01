@@ -123,8 +123,8 @@
                 - OPENVPN_PROVIDER=NORDVPN
                 - NORDVPN_COUNTRY=nl
                 #- OPENVPN_CONFIG=nl601.nordvpn.com
-                - OPENVPN_USERNAME=gellgoogjager@gmail.com
-                - OPENVPN_PASSWORD=F@ntasy54
+                - OPENVPN_USERNAME=user
+                - OPENVPN_PASSWORD=pass
                 - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60 --mssfix 1640
                 - WEBPROXY_ENABLED=false
                 - LOCAL_NETWORK=10.0.0.249/24
