@@ -85,3 +85,8 @@ IAC of my homelab setup done with ansible
 
 - Changes 
     - Added macOS VMs (app dev) to home lab diagram will work on IAC and templates in the future
+ 
+# 8/1/2020 
+
+- Changes 
+    - Updated all vm ansible yml files
