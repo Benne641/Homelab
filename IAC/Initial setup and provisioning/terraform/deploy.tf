@@ -47,11 +47,11 @@ resource "vsphere_virtual_machine" "vm" {
   guest_id = "${data.vsphere_virtual_machine.template2.guest_id}"
 
   scsi_type = "${data.vsphere_virtual_machine.template2.scsi_type}"
-  firmware  = "${var.vsphere_vm_firmware}"
+  firmware  = "${var.vsphere_vm_firmware2}"
 
   network_interface {
     network_id   = "${data.vsphere_network.network.id}"
-    adapter_type = "${data.vsphere_virtual_machine.template.network_interface_types[0]}"
+    adapter_type = "${data.vsphere_virtual_machine.template2.network_interface_types[0]}"
   }
 
   disk {
@@ -289,6 +289,136 @@ resource "vsphere_virtual_machine" "vm5" {
         
       }
       #ipv4_gateway = "10.0.0.1"
+      ipv4_gateway = "${var.ipgate}"
+    }
+  }
+}
+
+#Zabbix8
+resource "vsphere_virtual_machine" "vm" {
+  name             = "${var.vm_name}"
+  resource_pool_id = "${data.vsphere_resource_pool.pool.id}"
+  datastore_id     = "${data.vsphere_datastore.datastore.id}"
+
+  num_cpus = "${var.cpu_num}"
+  memory   = "${var.mem_num}"
+  guest_id = "${data.vsphere_virtual_machine.template3.guest_id}"
+
+  scsi_type = "${data.vsphere_virtual_machine.template3.scsi_type}"
+  firmware  = "${var.vsphere_vm_firmware2}"
+
+  network_interface {
+    network_id   = "${data.vsphere_network.network.id}"
+    adapter_type = "${data.vsphere_virtual_machine.template3.network_interface_types[0]}"
+  }
+
+  disk {
+    label            = "disk0"
+    size             = "${var.dsize}"
+    eagerly_scrub    = "${data.vsphere_virtual_machine.template3.disks.0.eagerly_scrub}"
+    thin_provisioned = "${data.vsphere_virtual_machine.template3.disks.0.thin_provisioned}"
+  }
+
+  clone {
+    template_uuid = "${data.vsphere_virtual_machine.template3.id}"
+
+    customize {
+      linux_options {
+        host_name = "${var.vm_name}"
+        domain = "${var.domname}"
+      }
+
+      network_interface {
+        ipv4_address = "${var.ipadd}"
+        ipv4_netmask = "${var.ipmask}"
+      }
+      ipv4_gateway = "${var.ipgate}"
+    }
+  }
+}
+
+#RCSA8_lab
+resource "vsphere_virtual_machine" "vm" {
+  name             = "${var.vm_name}"
+  resource_pool_id = "${data.vsphere_resource_pool.pool.id}"
+  datastore_id     = "${data.vsphere_datastore.datastore.id}"
+
+  num_cpus = "${var.cpu_num}"
+  memory   = "${var.mem_num}"
+  guest_id = "${data.vsphere_virtual_machine.template3.guest_id}"
+
+  scsi_type = "${data.vsphere_virtual_machine.template3.scsi_type}"
+  firmware  = "${var.vsphere_vm_firmware2}"
+
+  network_interface {
+    network_id   = "${data.vsphere_network.network.id}"
+    adapter_type = "${data.vsphere_virtual_machine.template3.network_interface_types[0]}"
+  }
+
+  disk {
+    label            = "disk0"
+    size             = "${var.dsize}"
+    eagerly_scrub    = "${data.vsphere_virtual_machine.template3.disks.0.eagerly_scrub}"
+    thin_provisioned = "${data.vsphere_virtual_machine.template3.disks.0.thin_provisioned}"
+  }
+
+  clone {
+    template_uuid = "${data.vsphere_virtual_machine.template3.id}"
+
+    customize {
+      linux_options {
+        host_name = "${var.vm_name}"
+        domain = "${var.domname}"
+      }
+
+      network_interface {
+        ipv4_address = "${var.ipadd}"
+        ipv4_netmask = "${var.ipmask}"
+      }
+      ipv4_gateway = "${var.ipgate}"
+    }
+  }
+}
+
+#Kube_Test
+resource "vsphere_virtual_machine" "vm" {
+  name             = "${var.vm_name}"
+  resource_pool_id = "${data.vsphere_resource_pool.pool.id}"
+  datastore_id     = "${data.vsphere_datastore.datastore.id}"
+
+  num_cpus = "${var.cpu_num}"
+  memory   = "${var.mem_num}"
+  guest_id = "${data.vsphere_virtual_machine.template.guest_id}"
+
+  scsi_type = "${data.vsphere_virtual_machine.template.scsi_type}"
+  firmware  = "${var.vsphere_vm_firmware}"
+
+  network_interface {
+    network_id   = "${data.vsphere_network.network.id}"
+    adapter_type = "${data.vsphere_virtual_machine.template.network_interface_types[0]}"
+  }
+
+  disk {
+    label            = "disk0"
+    size             = "${var.dsize}"
+    eagerly_scrub    = "${data.vsphere_virtual_machine.template.disks.0.eagerly_scrub}"
+    thin_provisioned = "${data.vsphere_virtual_machine.template.disks.0.thin_provisioned}"
+  }
+
+  clone {
+    template_uuid = "${data.vsphere_virtual_machine.template.id}"
+
+    customize {
+      linux_options {
+        host_name = "${var.vm_name}"
+        domain = "${var.domname}"
+      }
+
+      network_interface {
+        ipv4_address = "${var.ipadd}"
+        ipv4_netmask = "${var.ipmask}"
+        
+      }
       ipv4_gateway = "${var.ipgate}"
     }
   }

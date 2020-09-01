@@ -1,0 +1,16 @@
+---
+- hosts: zabbix
+  become: true
+  vars_files:
+    - creds.yml
+  tasks:
+    - name: post frontend enable task for zabbix 
+      become: true
+      shell: |
+        yum install -y zabbix-web-mysql-scl
+        yum update -y zabbix-*
+        systemctl start rh-php72-php-fpm
+        systemctl enable rh-php72-php-fpm
+        systemctl restart zabbix-server
+        cp /etc/httpd/conf.d/zabbix.conf.rpmsave /etc/httpd/conf.d/zabbix.conf
+        systemctl restart httpd

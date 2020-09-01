@@ -11,17 +11,26 @@
         - Containerized Jenkins CI/CD
         - Plex Server (media server)
         - web Server (nginx host)
-        - wordpress (blog) 
+        - wordpress (blog)
+        - Zabbix8 (monitoring)
+        - Kube_lab (k8s)
+        - RHCSA_lab (RHEL 8)
 
 - IAC 
-    - CM
-        - configureAll.yml (runs CM playbooks on all homelab servers)
+ - CM
+     - configureAll.yml (runs CM playbooks on all homelab servers)
             - Crossbone_Vanguard.yml
             - jenkins.yml 
             - PlexServerConfigCentos8.yml
             - webserver.yml
             - wordpressUbuntu.yml
+            - zabbix8.yml
+            - RHCSA8_Lab.yml
+            - 
 
+- Deprecated 
+    - terraform for servers that have been retired 
+    
 - Inital setup and Provisioning
     - Ansible
         - (deprecated) function deployment scripts in ansible on esxi 7 or 6.7
@@ -29,19 +38,17 @@
             - Server Playbooks (individual playbooks for linux lab servers)
     
     - Terraform
-        - deploy.tf (terraform script to deploy 1 to 5 of the home lab VMs)
+        - Terraform script for provisioning the entire homelab bundled into one deploy.tf
 
     
-# 6/5/2020 Homelab initial update
-
-IAC of my homelab setup done with ansible
+# IAC of my homelab setup done with terraform and ansible
 
 - Initial setup and provisioning
     - gold playbooks
         playbooks for provisioning mimimum requirement VMs
     
     - Server Playbooks
-        Playbooks for provisioning servers with ansible from vm templates to the specs required
+        Playbooks for provisioning servers with terrafrom to the specs required
 
 # Playbooks for CM of homelab servers
 - Configuration Management 
@@ -51,6 +58,13 @@ IAC of my homelab setup done with ansible
         Wordpress: blog
         Jenkins: CI/CD 
         Crossbone_vanguard: Sonarr, Radarr, Jackett, and transmission
+        Zabbix: deprecated zabbix 3.x client used for testing  in place upgrade (work)
+        zabbixUpgrade: playbooks for 
+        Zabbix 8: current monitoring solution 
+        RHCSA_lab: RHEPL 8 lab 
+        Kube_lab: k8s lab
+        
+# 6/5/2020 Homelab initial update        
         
 # 6/11/2020
 
@@ -90,3 +104,11 @@ IAC of my homelab setup done with ansible
 
 - Changes 
     - Updated all vm ansible yml files
+
+# 9/1/2020
+
+- Changes 
+    - Added terrafrom for Zabbix, Zabbix-8, zabbix upgrade, rhcsa_lab, and kubelab 
+    - Added ansible for Zabbix, Zabbix-8, zabbix upgrade, rhcsa_lab, and kubelab 
+    
+

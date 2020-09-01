@@ -15,4 +15,10 @@
   import_playbook: webserver.yml
 - name:  Run wordpress playbook
   import_playbook: wordpressUbuntu.yml
+- name:  Run zabbix playbook
+  import_playbook: zabbix8.yml
+- name:  Run RHCSA playbook
+  import_playbook: RHCSA_Lab.yml
+- name:  Run k8s playbook
+  import_playbook: Kube.yml
        

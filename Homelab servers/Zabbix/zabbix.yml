@@ -1,0 +1,81 @@
+---
+- hosts: zabbix
+  become: true
+  vars_files:
+    - creds.yml
+  tasks:
+    - name: update the system
+      yum:
+        name: "*"
+        state: latest
+
+    - name: install gnome
+      become: true
+      shell: sudo yum -y groupinstall "GNOME Desktop" "Graphical Administration Tools"
+
+    - name: set gui as default
+      become: true
+      shell: sudo ln -sf /lib/systemd/system/runlevel5.target /etc/systemd/system/default.target     
+
+    - name: install apache and php
+      become: true
+      yum:
+        state: present
+        name:
+          - httpd
+          - php
+          - mysql
+          - mariadb-server
+             
+    - name: cleaning
+      shell: yum clean all
+          
+    - name: restart system to reboot to newest kernel
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+
+    - name: wait for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: wait for the system to reboot
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 120
+
+    - name: update repo cache
+      yum:
+        update_cache: yes
+
+    - name: Install Zabbix with yum 
+      yum: name=https://repo.zabbix.com/zabbix/3.0/rhel/7/x86_64/zabbix-release-3.0-1.el7.noarch.rpm
+    
+    - name: install zabbix server, frontend, & agent
+      become: true
+      yum:
+        state: present
+        name:
+          - zabbix-server-mysql
+          - zabbix-web-mysql
+          - zabbix-agent 
+    
+    - name: Enable and start mariadb
+      service: 
+        name: mariadb
+        enabled: yes
+        state: started
+
+    - name: set selinux
+      become: true
+      shell: |
+        setsebool -P httpd_can_network_connect on
+        setsebool -P httpd_can_connect_zabbix 1
+        setsebool -P zabbix_can_network 1
+
+    - name: cleaning
+      shell: yum clean all
+
+      

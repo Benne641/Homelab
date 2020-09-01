@@ -1,0 +1,81 @@
+---
+- hosts: zabbix
+  become: true
+  vars_files:
+    - creds.yml
+  tasks:
+    - name: stop zabbix and download scl release 
+      become: true
+      shell: |
+        systemctl stop zabbix-server
+        systemctl stop zabbix-agent
+        yum -y remove zabbix-web-*
+        yum -y install centos-release-scl
+
+    - name: Install php 7 system reqs 
+      become: true
+      yum:
+        state: present
+        name:
+         - epel-release
+         - yum-utils
+
+    - name: enable & install php
+      shell: | 
+        yum -y install https://rpms.remirepo.net/enterprise/remi-release-7.rpm
+        yum -y install yum-utils
+        yum-config-manager -y --enable remi-php74
+        yum -y update
+        yum install -y php php-cli      
+
+    - name: Install Zabbix 5.0 repo for upgrade 
+      yum: name=https://repo.zabbix.com/zabbix/5.0/rhel/7/x86_64/zabbix-release-5.0-1.el7.noarch.rpm
+
+    - name: Backup Zabbix configuration 
+      shell: |
+         mkdir /opt/zabbix-backup/
+         cp /etc/zabbix/zabbix_server.conf /opt/zabbix-backup/
+         cp /etc/httpd/conf.d/zabbix.conf  /opt/zabbix-backup/
+         cp -R /usr/share/zabbix/ /opt/zabbix-backup/
+         cp -R /usr/share/doc/zabbix-* /opt/zabbix-backup/
+    
+    - name: install zabbix server, frontend, & agent + restart zabbix server & apache
+      shell: |
+        yum upgrade zabbix-server-mysql zabbix-web-mysql zabbix-agent
+        systemctl restart zabbix-server
+        systemctl restart httpd
+
+    - name: start updated zabbix
+      become: true
+      shell: |
+        systemctl start zabbix-server
+        systemctl start zabbix-agent
+
+    - name: enable frontend 
+      become: true
+      shell: |
+       grep -rl 'enabled=0' /etc/yum.repos.d/zabbix.repo | xargs sed -iu 's/enabled=0/enabled=1/g'
+
+    - name: post frontend enable task for zabbix 
+      become: true
+      shell: |
+        yum install -y zabbix-web-mysql-scl
+        yum update -y zabbix-*
+        systemctl start rh-php72-php-fpm
+        systemctl enable rh-php72-php-fpm
+        systemctl restart zabbix-server
+        cp /etc/httpd/conf.d/zabbix.conf.rpmsave /etc/httpd/conf.d/zabbix.conf
+        systemctl restart httpd
+
+        
+#   systemctl start zabbix-agent2
+#   systemctl start zabbix-proxy
+#   Steps after running
+#    vim /etc/yum.repos.d/zabbix.repo (enable frontend)
+#    yum install zabbix-web-mysql-scl
+#    yum update zabbix-*
+#    systemctl start rh-php72-php-fpm
+#    systemctl enable rh-php72-php-fpm
+#    systemctl restart zabbix-server
+#    cp /etc/httpd/conf.d/zabbix.conf.rpmsave /etc/httpd/conf.d/zabbix.conf
+#    systemctl restart httpd

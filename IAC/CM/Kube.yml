@@ -1,0 +1,172 @@
+---
+- hosts: k8s
+  become: true
+  vars_files:
+    - creds.yml
+  tasks:
+    - name: update the system
+      become: true
+      dnf:
+        name: "*"
+        state: latest
+
+    - name: restart system to reboot ot the newest kernel
+      become: true
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+
+    - name: wait for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: wait for the system to reboot
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 120
+
+    - name: Install system reqs
+      become: true
+      yum:
+        state: present
+        name:
+          - curl
+          - lvm2
+          - fuse-overlayfs
+          - wget
+          - device-mapper-persistent-data
+          - dnf-utils
+          - yum-utils 
+          - python3-pip 
+          - virtualenv 
+          - python3-setuptools
+          - epel-release 
+          - conntrack-tools
+    
+    - name: Add Docker GPG apt Key
+      rpm_key:
+        key: https://download.docker.com/linux/centos/gpg
+        state: present
+
+    - name: add docker repo
+      become: true
+      shell:
+        yum-config-manager \
+        --add-repo \
+        https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: install containerd.io version 1.2
+      become: true
+      dnf:
+        name: https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.6-3.3.el7.x86_64.rpm
+
+    - name: open firewall
+      firewalld: 
+        masquerade: yes
+        state: enabled
+        permanent: yes
+        zone: public
+    
+    - name: reload service firewalld
+      systemd:
+        name: firewalld
+        state: reloaded
+
+    - name: disable selinux
+      become: true
+      shell: |
+        setenforce 0
+        sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
+
+    - name: install kubectl
+      become: true
+      shell: |
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+        chmod +x ./kubectl
+        mv ./kubectl /usr/local/bin/kubectl
+
+    - name: install minikube
+      become: true
+      shell: |
+        curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        chmod +x minikube
+        mkdir -p /usr/local/bin/
+        install minikube /usr/local/bin/ 
+
+    - name: install kompose 
+      become: true
+      shell: |
+        curl -L https://github.com/kubernetes/kompose/releases/download/v1.19.0/kompose-linux-amd64 -o kompose
+        chmod +x kompose
+        sudo mv ./kompose /usr/local/bin/kompose
+    
+    - name: Install Zabbix with yum 
+      yum: name=https://repo.zabbix.com/zabbix/3.0/rhel/7/x86_64/zabbix-release-3.0-1.el7.noarch.rpm
+
+    - name: update repo cache
+      dnf:
+        update_cache: yes
+    
+    - name: install docker
+      become: true
+      dnf:
+        state: present
+        name: 
+          - docker-ce-cli
+          - docker-ce
+          - zabbix-agent
+    
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Enable and start docker
+      service: 
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: add user to docker group
+      become: true
+      shell: usermod -aG docker falcon
+
+    - name: just force systemd to reread configs (2.4 and above)
+      systemd:
+        daemon_reload: yes
+
+    # - name: Enable and start kubelet
+    #   service: 
+    #     name: kubelet
+    #     enabled: yes
+    #     state: started
+
+    - name: make none the default driver , start mini kube , install kubectl & load dashboard
+      become: false
+      shell: |
+        minikube start --extra-config=apiserver.runtime-config=apps/v1beta1=true,extensions/v1beta1/deployments=true 
+        minikube config set driver docker 
+        kubectl proxy --port=8080 &
+
+    - name: pull transmission docker image
+      docker_image:
+        name: haugene/transmission-openvpn
+        source: pull
+    
+    - name: pull jackett docker image 
+      docker_image:
+        name: linuxserver/jackett
+        source: pull
+
+    - name: pull radarr docker image 
+      docker_image:
+        name: linuxserver/radarr
+        source: pull
+
+    - name: pull sonarr docker image
+      docker_image:
+        name: linuxserver/sonarr
+        source: pull
+    
+    

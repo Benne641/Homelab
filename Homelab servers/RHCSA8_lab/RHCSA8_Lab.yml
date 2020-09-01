@@ -1,0 +1,17 @@
+---
+- hosts: RCSA-lab
+  become: true
+  vars_files:
+    - creds.yml
+  tasks:
+    - name: register system with redhat 
+      shell: |
+       subscription-manager register --username davidbennettjr --password Gund@m420
+       subscription-manager attach
+    
+    - name: update the system
+      yum:
+        name: "*"
+        state: latest
+
+    

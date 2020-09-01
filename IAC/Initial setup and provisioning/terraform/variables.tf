@@ -1,0 +1,61 @@
+variable "vsphere_server" {}
+variable "vsphere_user" {}
+variable "vsphere_password" {}
+variable "dc_name" {}
+variable "datastore_name" {}
+variable "pool_name" {}
+variable "network_name" {}
+variable "template_name" {}
+variable "template_name2" {}
+variable "template_name3" {}
+variable "vm_name" {}
+variable "vm_name2" {} 
+variable "vm_name3" {}
+variable "vm_name4" {}
+variable "vm_name5" {}
+variable "vm_name6" {}
+variable "vm_name7" {}
+variable "vm_name8" {}
+variable "cpu_num" {}
+variable "cpu_num2" {}
+variable "cpu_num3" {}
+variable "cpu_num4" {}
+variable "cpu_num5" {}
+variable "cpu_num6" {}
+variable "cpu_num7" {}
+variable "cpu_num8" {}
+variable "mem_num" {}
+variable "mem_num2" {}
+variable "mem_num3" {}
+variable "mem_num4" {}
+variable "mem_num5" {}
+variable "mem_num6" {}
+variable "mem_num7" {}
+variable "mem_num8" {}
+variable "dsize" {}
+variable "dsize2" {}
+variable "dsize3" {}
+variable "dsize4" {}
+variable "dsize5" {}
+variable "dsize6" {}
+variable "dsize7" {}
+variable "dsize8" {}
+variable "domname" {}
+variable "ipadd" {}
+variable "ipadd2" {}
+variable "ipadd3" {}
+variable "ipadd4" {}
+variable "ipadd5" {}
+variable "ipadd6" {}
+variable "ipadd7" {}
+variable "ipadd8" {}
+variable "ipgate" {} 
+variable "ipmask" {}
+variable "vsphere_vm_firmware" {
+     description = "Firmware set to bios or efi"
+     default = "bios"
+}
+variable "vsphere_vm_firmware2" {
+     description = "Firmware set to bios or efi"
+     default = "bios"
+}
